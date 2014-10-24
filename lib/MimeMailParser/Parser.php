@@ -205,18 +205,23 @@ class Parser
 			'text' => 'text/plain',
 			'html' => 'text/html'
 		);
+
 		if (in_array($type, array_keys($mime_types))) {
 			foreach ($this->parts as $part) {
 				if ($this->getPartContentType($part) == $mime_types[$type] && !$this->getPartContentDisposition($part)) {
 					$headers = $this->getPartHeaders($part);
-					$body = $this->decode($this->getPartBody($part), array_key_exists('content-transfer-encoding', $headers) ? $headers['content-transfer-encoding'] : '');
+
+					$body[] =array('body' => $this->decode($this->getPartBody($part), array_key_exists('content-transfer-encoding', $headers) ? $headers['content-transfer-encoding'] : ''),
+					'encoding' => isset($part['content-charset']) ? $part['content-charset'] : '');
 				}
 			}
 		} else {
 			throw new RuntimeException('Invalid type specified for Parser::getMessageBody. "type" can either be text or html.');
 		}
+
 		return $body;
 	}
+
 
 	/**
 	 * get the headers for the message body part.
@@ -253,13 +258,14 @@ class Parser
 		$dispositions = array("attachment", "inline");
 		foreach ($this->parts as $part) {
 			$disposition = $this->getPartContentDisposition($part);
-			if (in_array($disposition, $dispositions)) {
+			if ((in_array($disposition, $dispositions) && isset($part['content-name'])) || (isset($part['content-type']) && (isset($part['content-name'])) && ($part['content-type'] == 'application/octet-stream'))) {
+				//var_dump($part);
 				$attachments[] = new Attachment(
-						!empty($part['disposition-filename']) ? $part['disposition-filename'] : $part['content-name'],
-						$this->getPartContentType($part),
-						$this->getAttachmentStream($part),
-						$disposition,
-						$this->getPartHeaders($part)
+					!empty($part['disposition-filename']) ? $part['disposition-filename'] : $part['content-name'],
+					$this->getPartContentType($part),
+					$this->getAttachmentStream($part),
+					$disposition,
+					$this->getPartHeaders($part)
 				);
 			}
 		}
