@@ -6,7 +6,7 @@ use MimeMailParser\Exception\RuntimeException;
 
 /**
  * Fast Mime Mail parser Class using PHP's MailParse Extension
- * 
+ *
  * @author gabe@fijiwebdesign.com
  * @url http://www.fijiwebdesign.com/
  * @license http://creativecommons.org/licenses/by-sa/3.0/us/
@@ -42,7 +42,7 @@ class Parser
 
 	/**
 	 * Inialize some stuff
-	 * @return 
+	 * @return
 	 */
 	public function __construct()
 	{
@@ -119,7 +119,7 @@ class Parser
 
 	/**
 	 * Set the email text
-	 * @return Object MimeMailParser Instance 
+	 * @return Object MimeMailParser Instance
 	 * @param $data String
 	 */
 	public function setText($data)
@@ -320,10 +320,27 @@ class Parser
 		$dispositions = array("attachment", "inline");
 		foreach ($this->parts as $part) {
 			$disposition = $this->getPartContentDisposition($part);
-			if ((in_array($disposition, $dispositions) && isset($part['content-name'])) || (isset($part['content-type']) && (isset($part['content-name'])) && ($part['content-type'] == 'application/octet-stream'))) {
-				//var_dump($part);
+			if ((in_array($disposition, $dispositions) && isset($part['content-name'])) ||
+				(isset($part['content-type']) && (isset($part['content-name'])) && ($part['content-type'] == 'application/octet-stream')) ||
+				$part['content-type'] == 'text/calendar')
+			{
+				if ($part['content-type'] == 'text/calendar')
+				{
+					if (isset($part['disposition-filename']) || isset($part['content-name']))
+					{
+						$name = !empty($part['disposition-filename']) ? $part['disposition-filename'] : $part['content-name'];
+					}
+					else
+					{
+						$name = 'calendar.ics';
+					}
+				}
+				else
+				{
+					$name = !empty($part['disposition-filename']) ? $part['disposition-filename'] : $part['content-name'];
+				}
 				$attachments[] = new Attachment(
-					!empty($part['disposition-filename']) ? $part['disposition-filename'] : $part['content-name'],
+					$name,
 					$this->getPartContentType($part),
 					$this->getAttachmentStream($part),
 					$disposition,
