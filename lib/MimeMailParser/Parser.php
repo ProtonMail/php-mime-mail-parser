@@ -208,7 +208,7 @@ class Parser
 
 		if (in_array($type, array_keys($mime_types))) {
 			foreach ($this->parts as $part) {
-				if ($this->getPartContentType($part) == $mime_types[$type] && !$this->getPartContentDisposition($part)) {
+				if ($this->getPartContentType($part) == $mime_types[$type] && $this->isInlineContent($part)) {
 					$headers = $this->getPartHeaders($part);
 
 					$body[] =array('body' => $this->decode($this->getPartBody($part), array_key_exists('content-transfer-encoding', $headers) ? $headers['content-transfer-encoding'] : ''),
@@ -220,6 +220,68 @@ class Parser
 		}
 
 		return $body;
+	}
+
+	//inline but only support txt, html.
+	public function isInlineContent($part)
+	{
+		$dis = $this->getPartContentDisposition($part);
+		if ($dis)//ture
+		{
+			if ($dis == 'inline')
+			{
+				return true;
+				//maybe need it in the future.
+				// if (isset($part['disposition-filename']) && isset($part['content-name']))
+				// {
+				// 	$filename = end(explode('.', $part['disposition-filename']));
+				// 	$name = end(explode('.', isset($part['content-name']);
+				// 	if ($filename == 'html' || $filename == 'htm' || $name == 'html' || $name == 'htm')))
+				// 	{
+				// 		return true;
+				// 	}
+				// 	else
+				// 	{
+				// 		return false;
+				// 	}
+				// }
+				// else if(isset($part['disposition-filename']))
+				// {
+				// 	echo $part['disposition-filename'];
+				// 	if (end(explode('.', $part['disposition-filename'])) == 'htm' || end(explode('.', $part['disposition-filename'])) == 'html' )
+				// 	{
+				// 		return true;
+				// 	}
+				// 	else
+				// 	{
+				// 		return false;
+				// 	}
+				// }
+				// else if (isset($part['content-name']))
+				// {
+				// 	if (end(explode('.', $part['content-name'])) == 'html')
+				// 	{
+				// 		return true;
+				// 	}
+				// 	else
+				// 	{
+				// 		return false;
+				// 	}
+				// }
+				// else
+				// {
+				// 	return true;
+				// }
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			return true;
+		}
 	}
 
 
