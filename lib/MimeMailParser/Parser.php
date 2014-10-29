@@ -320,8 +320,8 @@ class Parser
 		$dispositions = array("attachment", "inline");
 		foreach ($this->parts as $part) {
 			$disposition = $this->getPartContentDisposition($part);
-			if ((in_array($disposition, $dispositions) && isset($part['content-name'])) ||
-				(isset($part['content-type']) && (isset($part['content-name'])) && ($part['content-type'] == 'application/octet-stream')) ||
+			if ((in_array($disposition, $dispositions) && (isset($part['content-name']) || isset($part['disposition-filename']))) ||
+				(isset($part['content-type']) && (isset($part['content-name']) || isset($part['disposition-filename'])) && ($part['content-type'] == 'application/octet-stream')) ||
 				$part['content-type'] == 'text/calendar')
 			{
 				if ($part['content-type'] == 'text/calendar')
