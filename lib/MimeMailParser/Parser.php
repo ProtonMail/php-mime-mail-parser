@@ -347,6 +347,18 @@ class Parser
 					$this->getPartHeaders($part)
 				);
 			}
+			else
+			{
+				if($part['content-type'] == 'multipart/encrypted' && $part['content-protocol'] == 'application/pgp-encrypted')
+				{
+					$attachments[] = new Attachment(
+						$name,
+						$this->getPartContentType($part),
+						$this->getAttachmentStream($part),
+						$disposition,
+						$this->getPartHeaders($part));
+				}
+			}
 		}
 		return $attachments;
 	}
