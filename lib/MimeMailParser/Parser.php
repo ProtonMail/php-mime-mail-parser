@@ -320,10 +320,14 @@ class Parser
 		$dispositions = array("attachment", "inline");
 		foreach ($this->parts as $part) {
 			$disposition = $this->getPartContentDisposition($part);
-			if ((in_array($disposition, $dispositions) && (isset($part['content-name']) || isset($part['disposition-filename']))) ||
-				(isset($part['content-type']) && (isset($part['content-name']) || isset($part['disposition-filename'])) && ($part['content-type'] == 'application/octet-stream')) ||
-				$part['content-type'] == 'text/calendar')
-			{
+            if ((in_array($disposition, $dispositions) && (isset($part['content-name']) ||
+                        isset($part['content-name']) ||
+                        isset($part['name']) ||
+                        isset($part['disposition-filename']))) ||
+                (isset($part['content-type']) && (isset($part['content-name']) || isset($part['disposition-filename'])) && ($part['content-type'] == 'application/octet-stream')) ||
+                $part['content-type'] == 'text/calendar' ||
+                $part['content-type'] == 'application/pdf'  //don't want break other so add hard code later need add a content-type list to check.
+            ) {
 				if ($part['content-type'] == 'text/calendar')
 				{
 					if (isset($part['disposition-filename']) || isset($part['content-name']))
@@ -338,6 +342,8 @@ class Parser
 				else
 				{
 					$name = !empty($part['disposition-filename']) ? $part['disposition-filename'] : $part['content-name'];
+                    $name = empty($name) ? $part['name'] : $name;
+                    $name = empty($name) ? "default" : $name;
 				}
 				$attachments[] = new Attachment(
 					$name,
