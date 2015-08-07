@@ -355,6 +355,7 @@ class Parser
 			}
 			else
 			{
+				$name = "default";
 				if($part['content-type'] == 'multipart/encrypted' && $part['content-protocol'] == 'application/pgp-encrypted')
 				{
 					$attachments[] = new Attachment(
