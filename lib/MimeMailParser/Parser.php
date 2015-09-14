@@ -329,6 +329,7 @@ class Parser
 	{
 		$attachments = array();
 		$dispositions = array("attachment", "inline");
+		$pgp_mime = false;
 		foreach ($this->parts as $part) {
 			$disposition = $this->getPartContentDisposition($part);
             if ((in_array($disposition, $dispositions) && (isset($part['content-name']) ||
@@ -356,6 +357,12 @@ class Parser
                     $name = empty($name) ? $part['name'] : $name;
                     $name = empty($name) ? "default" : $name;
 				}
+
+				// PGP/MIME
+				if ( $pgp_mime && $part['content-type'] == 'application/octet-stream' ) {
+					$disposition = 'pgp-mime';
+				}
+
 				$attachments[] = new Attachment(
 					$name,
 					$this->getPartContentType($part),
@@ -364,17 +371,24 @@ class Parser
 					$this->getPartHeaders($part)
 				);
 			}
-			else
-			{
-				$name = "default";
+			// else
+			// {
+			// 	$name = "pgp_mime_message.txt";
+			// 	if($part['content-type'] == 'multipart/encrypted' && $part['content-protocol'] == 'application/pgp-encrypted')
+			// 	{
+			// 		$attachments[] = new Attachment(
+			// 			$name,
+			// 			$this->getPartContentType($part),
+			// 			$this->getAttachmentStream($part),
+			// 			$disposition,
+			// 			$this->getPartHeaders($part));
+			// 	}
+			// }
+			// else
+			else {
 				if($part['content-type'] == 'multipart/encrypted' && $part['content-protocol'] == 'application/pgp-encrypted')
 				{
-					$attachments[] = new Attachment(
-						$name,
-						$this->getPartContentType($part),
-						$this->getAttachmentStream($part),
-						$disposition,
-						$this->getPartHeaders($part));
+					$pgp_mime = true;
 				}
 			}
 		}
