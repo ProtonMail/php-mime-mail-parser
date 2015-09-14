@@ -194,6 +194,17 @@ class Parser
 	}
 
 	/**
+	* Hack for duplicate headers which should not be duplicated
+	*/
+	public function pickOne( $header )
+	{
+		if( is_array( $header ) ) {
+			return $header[0];
+		}
+		return $header;
+	}
+
+	/**
 	 * Returns the email message body in the specified format
 	 * @return Mixed String Body or False if not found
 	 * @param $type Object[optional]
@@ -211,7 +222,7 @@ class Parser
 				if ($this->getPartContentType($part) == $mime_types[$type] && $this->isInlineContent($part)) {
 					$headers = $this->getPartHeaders($part);
 
-					$body[] =array('body' => $this->decode($this->getPartBody($part), array_key_exists('content-transfer-encoding', $headers) ? $headers['content-transfer-encoding'] : ''),
+					$body[] =array('body' => $this->decode($this->getPartBody($part), array_key_exists('content-transfer-encoding', $headers) ? $this->pickOne($headers['content-transfer-encoding']) : ''),
 					'encoding' => isset($part['content-charset']) ? $part['content-charset'] : '');
 				}
 			}
