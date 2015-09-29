@@ -332,34 +332,24 @@ class Parser
 		$pgp_mime = false;
 		foreach ($this->parts as $part) {
 			$disposition = $this->getPartContentDisposition($part);
-            if ((in_array($disposition, $dispositions) && (isset($part['content-name']) ||
-                        isset($part['content-name']) ||
-                        isset($part['name']) ||
-                        isset($part['disposition-filename']))) ||
-                (isset($part['content-type']) && (isset($part['content-name']) || isset($part['disposition-filename'])) && ($part['content-type'] == 'application/octet-stream')) ||
-                $part['content-type'] == 'text/calendar' ||
-                $part['content-type'] == 'application/pdf'  //don't want break other so add hard code later need add a content-type list to check.
+            if ((in_array($disposition, $dispositions) && (isset($part['content-name']) || isset($part['name']) || isset($part['disposition-filename']))) ||
+                (isset($part['content-type']) && $part['content-type'] == 'application/octet-stream') ||
+                (isset($part['content-type']) && $part['content-type'] == 'text/calendar') ||
+                (isset($part['content-type']) && $part['content-type'] == 'application/pdf')  //don't want break other so add hard code later need add a content-type list to check.
             ) {
-				if ($part['content-type'] == 'text/calendar')
-				{
-					if (isset($part['disposition-filename']) || isset($part['content-name']))
-					{
-						$name = !empty($part['disposition-filename']) ? $part['disposition-filename'] : $part['content-name'];
-					}
-					else
-					{
-						$name = 'calendar.ics';
-					}
-				}
-				else
-				{
-					$name = !empty($part['disposition-filename']) ? $part['disposition-filename'] : $part['content-name'];
-                    $name = empty($name) ? $part['name'] : $name;
-                    $name = empty($name) ? "default" : $name;
+				$default_name = 'default';
+				if ( isset($part['content-type']) && $part['content-type'] == 'text/calendar') {
+					$default_name = 'calendar.ics';
 				}
 
+				// Attachment naming priority list
+				$name = ( isset($part['disposition-filename']) ) ? $part['disposition-filename'] : '';
+				$name = ( strlen($name) === 0 && isset($part['content-name']) ) ? $part['content-name'] : $name;
+				$name = ( strlen($name) === 0 && isset($part['name']) ) ? $part['name'] : $name;
+                $name = strlen($name) === 0 ? $default_name : $name;
+
 				// PGP/MIME
-				if ( $pgp_mime && $part['content-type'] == 'application/octet-stream' ) {
+				if ( $pgp_mime && isset($part['content-type']) && $part['content-type'] == 'application/octet-stream' ) {
 					$disposition = 'pgp-mime';
 				}
 
