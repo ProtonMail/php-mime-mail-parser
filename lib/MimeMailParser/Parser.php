@@ -213,16 +213,21 @@ class Parser
 	{
 		$body = false;
 		$mime_types = array(
-			'text' => 'text/plain',
-			'html' => 'text/html'
+			'text' => array('text/plain','text','plain/text'), // add misspellings as a hack for some stupid emails
+			'html' => array('text/html')
 		);
 
 		if (in_array($type, array_keys($mime_types))) {
 			foreach ($this->parts as $part) {
-				if ($this->getPartContentType($part) == $mime_types[$type] && $this->isInlineContent($part)) {
+				if ( in_array($this->getPartContentType($part), $mime_types[$type]) && $this->isInlineContent($part)) {
 					$headers = $this->getPartHeaders($part);
 
-					$body[] =array('body' => $this->decode($this->getPartBody($part), array_key_exists('content-transfer-encoding', $headers) ? $this->pickOne($headers['content-transfer-encoding']) : ''),
+					$decoded_body = $this->decode($this->getPartBody($part), array_key_exists('content-transfer-encoding', $headers) ? $this->pickOne($headers['content-transfer-encoding']) : '');
+					if ( $decoded_body === false ) {
+						continue;
+					}
+
+					$body[] =array('body' => $decoded_body,
 					'encoding' => isset($part['content-charset']) ? $part['content-charset'] : '');
 				}
 			}
@@ -239,7 +244,7 @@ class Parser
 		$dis = $this->getPartContentDisposition($part);
 		if ($dis)//ture
 		{
-			if ($dis == 'inline')
+			if ($dis == 'inline' || $dis == 'infile') // Add 'infile' as a hack for some stupid emails
 			{
 				return true;
 				//maybe need it in the future.
