@@ -205,8 +205,41 @@ class Parser
 	}
 
 	/**
+	 * Returns the report sections if top-level content type is multipart/report
+	 * @return Mixed array Body or False if not found
+	 */
+	public function getReport() {
+			$body = false;
+            if ( isset($this->parts[1]) && $this->getPartContentType($this->parts[1]) === 'multipart/report' ) {
+                $body = array();
+                foreach ( $this->parts as $id => $part ) {
+                    if ( preg_match('/^1\.[0-9]+$/', $id) ) {
+						$headers = $this->getPartHeaders($part);
+
+						$decoded_body = $this->decode($this->getPartBody($part), array_key_exists('content-transfer-encoding', $headers) ? $this->pickOne($headers['content-transfer-encoding']) : '');
+						if ( $decoded_body === false ) {
+							continue;
+						}
+
+						$content_type = $this->getPartContentType($part);
+						$prefix = '';
+						if ( $content_type !== 'text/plain' ) {
+							$prefix =  "----------------------------------------------\n";
+							$prefix .= ( $content_type . "\n" );
+							$prefix .= "----------------------------------------------\n";
+						}
+
+						$body[] =array('body' => $prefix.$decoded_body,
+						'encoding' => isset($part['content-charset']) ? $part['content-charset'] : '');
+                    }
+                }
+            }
+            return $body;
+	}
+
+	/**
 	 * Returns the email message body in the specified format
-	 * @return Mixed String Body or False if not found
+	 * @return Mixed array Body or False if not found
 	 * @param $type Object[optional]
 	 */
 	public function getMessageBody($type = 'text')
