@@ -257,11 +257,17 @@ class Parser
 
 					$decoded_body = $this->decode($this->getPartBody($part), array_key_exists('content-transfer-encoding', $headers) ? $this->pickOne($headers['content-transfer-encoding']) : '');
 					if ( $decoded_body === false ) {
-						continue;
+						$body[] = array(
+							'body' => $type === 'text' ? "Error decoding message content\n" : "<div>Error decoding message content</div>",
+							'encoding' => 'utf8'
+						);
 					}
-
-					$body[] =array('body' => $decoded_body,
-					'encoding' => isset($part['content-charset']) ? $part['content-charset'] : '');
+					else {
+						$body[] = array(
+							'body' => $decoded_body,
+							'encoding' => isset($part['content-charset']) ? $part['content-charset'] : ''
+						);
+					}
 				}
 			}
 		} else {
