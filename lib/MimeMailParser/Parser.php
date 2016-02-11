@@ -379,13 +379,22 @@ class Parser
 			'application/pdf' => 'pdf',
 			'image/jpeg' => 'jpg',
 			'image/gif' => 'gif',
-			'image/png' => 'png'
+			'image/png' => 'png',
+			'image/bmp' => 'bmp',
+			'video/3gpp' => '3gp',
+			'audio/3gpp' => '3gp',
+			'video/3gpp2' => '3g2',
+			'audio/3gpp2' => '3g2',
+			'video/mp4' => 'mp4',
+			'audio/mp4' => 'mp4',
+			'audio/wav' => 'wav',
+			'audio/mpeg' => 'mp3'
 		);
 		$pgp_mime = false;
 		foreach ($this->parts as $part) {
 			$disposition = $this->getPartContentDisposition($part);
             if ((in_array($disposition, $dispositions) && (isset($part['content-name']) || isset($part['name']) || isset($part['disposition-filename']))) ||
-                (isset($part['content-type']) && isset($content_types[$part['content-type']])) 
+                (isset($part['content-type']) && array_key_exists($part['content-type'], $content_types)) 
             ) {
 				$default_name = 'default';
 				if ( isset($part['content-type']) && $part['content-type'] == 'text/calendar') {
