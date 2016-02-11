@@ -373,13 +373,19 @@ class Parser
 	{
 		$attachments = array();
 		$dispositions = array("attachment", "inline");
+		$content_types = array(
+			'application/octet-stream' => null,
+			'text/calendar' => 'ics',
+			'application/pdf' => 'pdf',
+			'image/jpeg' => 'jpg',
+			'image/gif' => 'gif',
+			'image/png' => 'png'
+		);
 		$pgp_mime = false;
 		foreach ($this->parts as $part) {
 			$disposition = $this->getPartContentDisposition($part);
             if ((in_array($disposition, $dispositions) && (isset($part['content-name']) || isset($part['name']) || isset($part['disposition-filename']))) ||
-                (isset($part['content-type']) && $part['content-type'] == 'application/octet-stream') ||
-                (isset($part['content-type']) && $part['content-type'] == 'text/calendar') ||
-                (isset($part['content-type']) && $part['content-type'] == 'application/pdf')  //don't want break other so add hard code later need add a content-type list to check.
+                (isset($part['content-type']) && isset($content_types[$part['content-type']])) 
             ) {
 				$default_name = 'default';
 				if ( isset($part['content-type']) && $part['content-type'] == 'text/calendar') {
@@ -390,7 +396,25 @@ class Parser
 				$name = ( isset($part['disposition-filename']) ) ? $part['disposition-filename'] : '';
 				$name = ( strlen($name) === 0 && isset($part['content-name']) ) ? $part['content-name'] : $name;
 				$name = ( strlen($name) === 0 && isset($part['name']) ) ? $part['name'] : $name;
+				$name = ( strlen($name) === 0 && isset($part['content-location']) ) ? $part['content-location'] : $name;
+				// Content name
+				if ( strlen($name) === 0 && isset($part['content-location']) ) {
+					$path = parse_url($part['content-location'], PHP_URL_PATH);
+					setlocale(LC_ALL, 'en_US.utf8');
+					$name = basename($path);
+				}
+				// Content ID
+				$name = ( strlen($name) === 0 && isset($part['content-id']) ) ? str_replace('>','',str_replace('<','',$part['content-id'])) : $name;
+				// Default
                 $name = strlen($name) === 0 ? $default_name : $name;
+
+                // Extension
+                if (isset($part['content-type']) && isset($content_types[$part['content-type']])) {
+                	$extension = pathinfo($name, PATHINFO_EXTENSION);
+                	if ( strlen($extension) === 0 ) {
+                		$name .= ('.' . $content_types[$part['content-type']]);
+                	}
+                }
 
 				// PGP/MIME
 				if ( $pgp_mime && isset($part['content-type']) && $part['content-type'] == 'application/octet-stream' ) {
