@@ -506,7 +506,7 @@ class Parser
 	 * @return String
 	 * @param $part Object
 	 */
-	protected function getPartHeaderRaw(&$part)
+	protected function getPartHeaderRaw($part)
 	{
 		$header = '';
 		if ($this->stream) {
@@ -524,7 +524,7 @@ class Parser
 	 * @return String
 	 * @param $part Object
 	 */
-	protected function getPartBody(&$part)
+	protected function getPartBody($part)
 	{
 		$body = '';
 		if ($this->stream) {
@@ -542,7 +542,7 @@ class Parser
 	 * @return String Mime Header Part
 	 * @param $part Array
 	 */
-	protected function getPartHeaderFromFile(&$part)
+	protected function getPartHeaderFromFile($part)
 	{
 		$start = $part['starting-pos'];
 		$end = $part['starting-pos-body'];
@@ -556,7 +556,7 @@ class Parser
 	 * @return String Mime Body Part
 	 * @param $part Array
 	 */
-	protected function getPartBodyFromFile(&$part)
+	protected function getPartBodyFromFile($part)
 	{
 		$start = $part['starting-pos-body'];
 		$end = $part['ending-pos-body'];
@@ -570,7 +570,7 @@ class Parser
 	 * @return String Mime Header Part
 	 * @param $part Array
 	 */
-	protected function getPartHeaderFromText(&$part)
+	protected function getPartHeaderFromText($part)
 	{
 		$start = $part['starting-pos'];
 		$end = $part['starting-pos-body'];
@@ -583,7 +583,7 @@ class Parser
 	 * @return String Mime Body Part
 	 * @param $part Array
 	 */
-	protected function getPartBodyFromText(&$part)
+	protected function getPartBodyFromText($part)
 	{
 		$start = $part['starting-pos-body'];
 		$end = $part['ending-pos-body'];
@@ -596,7 +596,7 @@ class Parser
 	 * @return String Mime Body Part
 	 * @param $part Array
 	 */
-	protected function getAttachmentStream(&$part)
+	protected function getAttachmentStream($part)
 	{
 		$temp_fp = tmpfile();
 
@@ -616,8 +616,8 @@ class Parser
                     } else if ($len < $write) {
                         $write = $len;
                     }
-					$part = fread($this->stream, $write);
-					fwrite($temp_fp, $this->decode($part, $encoding));
+					$attachment = fread($this->stream, $write);
+					fwrite($temp_fp, $this->decode($attachment, $encoding));
 					$written += $write;
 				}
 			} else if ($this->data) {
@@ -647,5 +647,4 @@ class Parser
 			return $encodedString;
 		}
 	}
-
 }
