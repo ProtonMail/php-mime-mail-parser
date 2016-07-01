@@ -111,8 +111,14 @@ class Parser
 		$this->resource = mailparse_msg_create();
 		// parses the message incrementally low memory usage but slower
 		while ( ! feof($this->stream)) {
-			mailparse_msg_parse($this->resource, fread($this->stream, 2082));
+			$buf = fread($this->stream, 2082);
+			mailparse_msg_parse($this->resource, $buf);
 		}
+		// always add trailing newline if not present
+		if (substr($buf, -2) != "\r\n") {
+			mailparse_msg_parse($this->resource, "\r\n");
+		}
+
 		$this->parse();
 		return $this;
 	}
