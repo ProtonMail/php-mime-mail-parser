@@ -417,14 +417,6 @@ class Parser
 				// Default
                 $name = strlen($name) === 0 ? $default_name : $name;
 
-                // Extension
-                if (isset($part['content-type']) && isset($content_types[$part['content-type']])) {
-                	$extension = pathinfo($name, PATHINFO_EXTENSION);
-                	if ( strlen($extension) === 0 ) {
-                		$name .= ('.' . $content_types[$part['content-type']]);
-                	}
-                }
-
 				// PGP/MIME
 				if ( $pgp_mime && isset($part['content-type']) && $part['content-type'] == 'application/octet-stream' ) {
 					$disposition = 'pgp-mime';
