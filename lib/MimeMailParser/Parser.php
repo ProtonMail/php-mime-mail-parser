@@ -394,7 +394,7 @@ class Parser
 		foreach ($this->parts as $part) {
 			$disposition = $this->getPartContentDisposition($part);
             if ((in_array($disposition, $dispositions) && (isset($part['content-name']) || isset($part['name']) || isset($part['disposition-filename']))) ||
-                (isset($part['content-type']) && array_key_exists($part['content-type'], $content_types)) 
+                (isset($part['content-type']) && array_key_exists($part['content-type'], $content_types))
             ) {
 				$default_name = 'default';
 				if ( isset($part['content-type']) && $part['content-type'] == 'text/calendar') {
@@ -422,12 +422,24 @@ class Parser
 					$disposition = 'pgp-mime';
 				}
 
+				// Guess at missing disposition
+				$headers = $this->getPartHeaders($part);
+				if (!$disposition) {
+					if (isset($headers['content-id']) || isset($headers['content-location'])) {
+						$disposition = 'inline';
+					}
+					else {
+						$disposition = 'attachment';
+					}
+					$headers['content-disposition'] = $disposition;
+				}
+
 				$attachments[] = new Attachment(
 					$name,
 					$this->getPartContentType($part),
 					$this->getAttachmentStream($part),
 					$disposition,
-					$this->getPartHeaders($part)
+					$headers
 				);
 			}
 			// else
