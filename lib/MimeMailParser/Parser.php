@@ -390,8 +390,64 @@ class Parser
 			'audio/wav' => 'wav',
 			'audio/mpeg' => 'mp3'
 		);
-		$pgp_mime = false;
-		foreach ($this->parts as $part) {
+
+		$mime_encrypted = null;
+		$mime_signed = null;
+
+		foreach ($this->parts as $part_id => $part) {
+
+			$headers = $this->getPartHeaders($part);
+
+			if ($part['content-type']) {
+
+				if (!$mime_signed && !$mime_encrypted) {
+					if ($part['content-type'] == 'multipart/encrypted' && $part['content-protocol'] == 'application/pgp-encrypted') {
+						$mime_encrypted = $part_id;
+					}
+					if ($part['content-type'] == 'multipart/signed' && $part['content-protocol'] == 'application/pgp-signature') {
+						$mime_signed = $part_id;
+					}
+				}
+
+				if ($mime_encrypted || $mime_signed) {
+
+	                $disposition = null;
+
+					// PGP encrypted
+					if ($mime_encrypted . '.2' === $part_id && $part['content-type'] == 'application/octet-stream' ) {
+						$disposition = 'pgp-encrypted';
+					}
+					// PGP signed
+					else if ($mime_signed . '.2' === $part_id && $part['content-type'] == 'application/pgp-signature') {
+						$disposition = 'pgp-signature';
+						$content = $this->getAttachmentStream($part);
+					}
+					else if ($mime_signed . '.1' === $part_id) {
+						$disposition = 'pgp-signed';
+						$content = $this->getStream($this->getPartRaw($part));
+					}
+
+					if ($disposition) {
+						$attachments[] = new Attachment(
+							$disposition,
+							$this->getPartContentType($part),
+							$content,
+							$disposition,
+							$headers
+						);
+
+						if ($disposition === 'pgp-encrypted') {
+							// We are done, no need to parse further
+							break;
+						}
+						else {
+							continue;
+						}
+					}
+				}
+			}
+
+			// Regular attachments
 			$disposition = $this->getPartContentDisposition($part);
             if ((in_array($disposition, $dispositions) && (isset($part['content-name']) || isset($part['name']) || isset($part['disposition-filename']))) ||
                 (isset($part['content-type']) && array_key_exists($part['content-type'], $content_types))
@@ -417,13 +473,7 @@ class Parser
 				// Default
                 $name = strlen($name) === 0 ? $default_name : $name;
 
-				// PGP/MIME
-				if ( $pgp_mime && isset($part['content-type']) && $part['content-type'] == 'application/octet-stream' ) {
-					$disposition = 'pgp-mime';
-				}
-
 				// Guess at missing disposition
-				$headers = $this->getPartHeaders($part);
 				if (!$disposition) {
 					if (isset($headers['content-id']) || isset($headers['content-location'])) {
 						$disposition = 'inline';
@@ -441,26 +491,6 @@ class Parser
 					$disposition,
 					$headers
 				);
-			}
-			// else
-			// {
-			// 	$name = "pgp_mime_message.txt";
-			// 	if($part['content-type'] == 'multipart/encrypted' && $part['content-protocol'] == 'application/pgp-encrypted')
-			// 	{
-			// 		$attachments[] = new Attachment(
-			// 			$name,
-			// 			$this->getPartContentType($part),
-			// 			$this->getAttachmentStream($part),
-			// 			$disposition,
-			// 			$this->getPartHeaders($part));
-			// 	}
-			// }
-			// else
-			else {
-				if($part['content-type'] == 'multipart/encrypted' && $part['content-protocol'] == 'application/pgp-encrypted')
-				{
-					$pgp_mime = true;
-				}
 			}
 		}
 		return $attachments;
@@ -512,15 +542,7 @@ class Parser
 	 */
 	protected function getPartHeaderRaw($part)
 	{
-		$header = '';
-		if ($this->stream) {
-			$header = $this->getPartHeaderFromFile($part);
-		} else if ($this->data) {
-			$header = $this->getPartHeaderFromText($part);
-		} else {
-			throw new RuntimeException('Parser::setPath() or Parser::setText() must be called before retrieving email parts.');
-		}
-		return $header;
+		return $this->getData($part['starting-pos'], $part['starting-pos-body']);
 	}
 
 	/**
@@ -530,72 +552,40 @@ class Parser
 	 */
 	protected function getPartBody($part)
 	{
-		$body = '';
+		return $this->getData($part['starting-pos-body'], $part['ending-pos-body']);
+	}
+
+	protected function getPartRaw($part)
+	{
+		return $this->getData($part['starting-pos'], $part['ending-pos-body']);
+	}
+
+	protected function getData($start, $end)
+	{
+		if ($end <= $start) {
+			return '';
+		}
+
 		if ($this->stream) {
-			$body = $this->getPartBodyFromFile($part);
+			fseek($this->stream, $start, SEEK_SET);
+			return fread($this->stream, $end - $start);
 		} else if ($this->data) {
-			$body = $this->getPartBodyFromText($part);
+			return substr($this->data, $start, $end - $start);
 		} else {
 			throw new RuntimeException('Parser::setPath() or Parser::setText() must be called before retrieving email parts.');
 		}
-		return $body;
 	}
 
-	/**
-	 * Retrieve the Header from a MIME part from file
-	 * @return String Mime Header Part
-	 * @param $part Array
-	 */
-	protected function getPartHeaderFromFile($part)
+	protected function getStream($data)
 	{
-		$start = $part['starting-pos'];
-		$end = $part['starting-pos-body'];
-		fseek($this->stream, $start, SEEK_SET);
-		$header = fread($this->stream, $end - $start);
-		return $header;
-	}
-
-	/**
-	 * Retrieve the Body from a MIME part from file
-	 * @return String Mime Body Part
-	 * @param $part Array
-	 */
-	protected function getPartBodyFromFile($part)
-	{
-		$start = $part['starting-pos-body'];
-		$end = $part['ending-pos-body'];
-		fseek($this->stream, $start, SEEK_SET);
-		$body = '';
-		if ($end > $start) {
-			$body = fread($this->stream, $end - $start);
+		$temp_fp = tmpfile();
+		if ($temp_fp) {
+			fwrite($temp_fp, $data, strlen($data));
+			fseek($temp_fp, 0, SEEK_SET);
+		} else {
+			throw new RuntimeException('Could not create temporary files for attachments. Your tmp directory may be unwritable by PHP.');
 		}
-		return $body;
-	}
-
-	/**
-	 * Retrieve the Header from a MIME part from text
-	 * @return String Mime Header Part
-	 * @param $part Array
-	 */
-	protected function getPartHeaderFromText($part)
-	{
-		$start = $part['starting-pos'];
-		$end = $part['starting-pos-body'];
-		$header = substr($this->data, $start, $end - $start);
-		return $header;
-	}
-
-	/**
-	 * Retrieve the Body from a MIME part from text
-	 * @return String Mime Body Part
-	 * @param $part Array
-	 */
-	protected function getPartBodyFromText($part)
-	{
-		$start = $part['starting-pos-body'];
-		$end = $part['ending-pos-body'];
-		$body = substr($this->data, $start, $end - $start);
-		return $body;
+		return $temp_fp;
 	}
 
 	/**
@@ -628,7 +618,7 @@ class Parser
 					$written += $write;
 				}
 			} else if ($this->data) {
-				$attachment = $this->decode($this->getPartBodyFromText($part), $encoding);
+				$attachment = $this->decode($this->getPartBody($part), $encoding);
 				fwrite($temp_fp, $attachment, strlen($attachment));
 			}
 			fseek($temp_fp, 0, SEEK_SET);
