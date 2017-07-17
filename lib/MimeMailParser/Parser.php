@@ -416,6 +416,7 @@ class Parser
 					// PGP encrypted
 					if ($mime_encrypted . '.2' === $part_id && $part['content-type'] == 'application/octet-stream' ) {
 						$disposition = 'pgp-encrypted';
+						$content = $this->getAttachmentStream($part);
 					}
 					// PGP signed
 					else if ($mime_signed . '.2' === $part_id && $part['content-type'] == 'application/pgp-signature') {
