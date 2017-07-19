@@ -598,7 +598,7 @@ class Parser
 	{
 		$temp_fp = tmpfile();
 
-		array_key_exists('content-transfer-encoding', $part['headers']) ? $encoding = $part['headers']['content-transfer-encoding'] : $encoding = '';
+		$encoding = array_key_exists('content-transfer-encoding', $part['headers']) ? $this->pickOne($part['headers']['content-transfer-encoding']) : '';
 
 		if ($temp_fp) {
 			if ($this->stream) {
