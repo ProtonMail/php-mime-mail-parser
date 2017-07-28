@@ -375,6 +375,7 @@ class Parser
 		$dispositions = array("attachment", "inline");
 		$content_types = array(
 			'application/octet-stream' => null,
+			'application/zip' => 'zip',
 			'text/calendar' => 'ics',
 			'application/pdf' => 'pdf',
 			'image/jpeg' => 'jpg',
