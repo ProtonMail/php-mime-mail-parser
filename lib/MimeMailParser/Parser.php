@@ -402,10 +402,10 @@ class Parser
 			if (isset($part['content-type'])) {
 
 				if (isset($part['content-protocol']) && !$mime_signed && !$mime_encrypted) {
-					if ($part['content-type'] == 'multipart/encrypted' && $part['content-protocol'] == 'application/pgp-encrypted') {
+					if ($part['content-type'] === 'multipart/encrypted' && $part['content-protocol'] === 'application/pgp-encrypted') {
 						$mime_encrypted = $part_id;
 					}
-					if ($part['content-type'] == 'multipart/signed' && $part['content-protocol'] == 'application/pgp-signature') {
+					if ($part['content-type'] === 'multipart/signed' && $part['content-protocol'] === 'application/pgp-signature') {
 						$mime_signed = $part_id;
 					}
 				}
@@ -415,12 +415,12 @@ class Parser
 	                $disposition = null;
 
 					// PGP encrypted
-					if ($mime_encrypted . '.2' === $part_id && $part['content-type'] == 'application/octet-stream' ) {
+					if ($mime_encrypted . '.2' === $part_id && $part['content-type'] === 'application/octet-stream' ) {
 						$disposition = 'pgp-encrypted';
 						$content = $this->getAttachmentStream($part);
 					}
 					// PGP signed
-					else if ($mime_signed . '.2' === $part_id && $part['content-type'] == 'application/pgp-signature') {
+					else if ($mime_signed . '.2' === $part_id && $part['content-type'] === 'application/pgp-signature') {
 						$disposition = 'pgp-signature';
 						$content = $this->getAttachmentStream($part);
 					}
