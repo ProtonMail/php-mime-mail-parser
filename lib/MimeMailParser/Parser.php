@@ -399,9 +399,9 @@ class Parser
 
 			$headers = $this->getPartHeaders($part);
 
-			if ($part['content-type']) {
+			if (isset($part['content-type'])) {
 
-				if (!$mime_signed && !$mime_encrypted) {
+				if (isset($part['content-protocol']) && !$mime_signed && !$mime_encrypted) {
 					if ($part['content-type'] == 'multipart/encrypted' && $part['content-protocol'] == 'application/pgp-encrypted') {
 						$mime_encrypted = $part_id;
 					}
