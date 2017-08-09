@@ -139,12 +139,17 @@ class Parser
 	 */
 	private function parse()
 	{
+		// Suppress annoying notices/warnings
+		set_error_handler(function() { /* Nothing */ }, E_NOTICE|E_WARNING);
+
 		$structure = mailparse_msg_get_structure($this->resource);
 		$this->parts = array();
 		foreach ($structure as $part_id) {
 			$part = mailparse_msg_get_part($this->resource, $part_id);
 			$this->parts[$part_id] = mailparse_msg_get_part_data($part);
 		}
+
+		restore_error_handler();
 	}
 
 	/**
