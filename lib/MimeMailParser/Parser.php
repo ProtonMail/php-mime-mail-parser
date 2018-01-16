@@ -399,6 +399,8 @@ class Parser
 
 		$mime_encrypted = null;
 		$mime_signed = null;
+		// fix MS/Exchange garbling
+		$garbled_mime_encrypt = false;
 
 		foreach ($this->parts as $part_id => $part) {
 
@@ -415,12 +417,27 @@ class Parser
 					}
 				}
 
-				if ($mime_encrypted || $mime_signed) {
+				if ($part['content-type'] === 'application/pgp-encrypted' && !$mime_encrypted) {
+				    $body = $this->getPartBody($part);
+				    $transferEncoding = array_key_exists('content-transfer-encoding', $headers) ? $this->pickOne($headers['content-transfer-encoding']) : '';
+					$decoded_body = $this->decode($body, $transferEncoding);
 
-	                $disposition = null;
+					if (trim($decoded_body) === 'Version: 1') {
+						// next part might be the pgp mime message
+						$garbled_mime_encrypt = explode('.', $part_id);
+						$garbled_mime_encrypt[count($garbled_mime_encrypt) - 1]++;
+						$garbled_mime_encrypt = implode('.', $garbled_mime_encrypt);
+					}
+				}
+
+				if ($mime_encrypted || $mime_signed || $garbled_mime_encrypt) {
+
+					$disposition = null;
 
 					// PGP encrypted
-					if ($mime_encrypted . '.2' === $part_id && $part['content-type'] === 'application/octet-stream' ) {
+					if ( ($mime_encrypted . '.2' === $part_id || $garbled_mime_encrypt === $part_id) &&
+						$part['content-type'] === 'application/octet-stream') {
+						$attachments = [];
 						$disposition = 'pgp-encrypted';
 						$content = $this->getAttachmentStream($part);
 					}
